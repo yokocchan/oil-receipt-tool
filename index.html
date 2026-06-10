@@ -1,0 +1,723 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ガソリンレシート 30000円調整</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7f4ee;
+      --panel: #ffffff;
+      --ink: #202124;
+      --muted: #68635c;
+      --line: #d8d2c7;
+      --accent: #1f6f68;
+      --accent-strong: #16534e;
+      --warn: #b42318;
+      --warn-bg: #fff0ed;
+      --ok-bg: #eaf6f2;
+      --soft: #efe9dd;
+      --focus: #c78a2c;
+      --shadow: 0 14px 34px rgba(44, 39, 31, 0.11);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Yu Gothic", "Meiryo", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.6;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    .app-shell {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 40px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.55rem, 2.4vw, 2.35rem);
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    .target-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 42px;
+      padding: 8px 14px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      white-space: nowrap;
+      border-radius: 8px;
+      font-weight: 700;
+    }
+
+    .target-badge span {
+      color: var(--accent);
+      font-size: 1.08rem;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 18px 18px 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .panel-header h2 {
+      margin: 0;
+      font-size: 1.05rem;
+      letter-spacing: 0;
+    }
+
+    .panel-body {
+      padding: 18px;
+    }
+
+    .receipt-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .receipt-row {
+      display: grid;
+      grid-template-columns: 44px minmax(145px, 1fr) minmax(130px, 1fr) 40px;
+      gap: 10px;
+      align-items: center;
+      min-height: 52px;
+      padding: 8px;
+      border: 1px solid var(--line);
+      background: #fcfbf8;
+      border-radius: 8px;
+    }
+
+    .receipt-row.invalid {
+      border-color: #e2a09a;
+      background: var(--warn-bg);
+    }
+
+    .row-number {
+      color: var(--muted);
+      font-size: 0.9rem;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+
+    label {
+      display: grid;
+      gap: 4px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    input {
+      width: 100%;
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 7px 10px;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    input:focus {
+      outline: 3px solid rgba(199, 138, 44, 0.24);
+      border-color: var(--focus);
+    }
+
+    .icon-button {
+      width: 38px;
+      height: 38px;
+      display: inline-grid;
+      place-items: center;
+      border-radius: 8px;
+      background: var(--soft);
+      color: var(--ink);
+      font-size: 1.05rem;
+      font-weight: 800;
+    }
+
+    .icon-button:hover {
+      background: #e3dccf;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .primary,
+    .secondary,
+    .danger {
+      min-height: 42px;
+      padding: 9px 16px;
+      border-radius: 8px;
+      font-weight: 700;
+    }
+
+    .primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .primary:hover {
+      background: var(--accent-strong);
+    }
+
+    .secondary {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+    }
+
+    .secondary:hover {
+      background: #f2eee5;
+    }
+
+    .danger {
+      background: var(--warn-bg);
+      color: var(--warn);
+      border: 1px solid #efc4bf;
+    }
+
+    .danger:hover {
+      background: #ffe3df;
+    }
+
+    .status {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: #fbfaf6;
+      color: var(--muted);
+    }
+
+    .status.error {
+      border-color: #efb8b2;
+      background: var(--warn-bg);
+      color: var(--warn);
+    }
+
+    .status.success {
+      border-color: #a7d7c8;
+      background: var(--ok-bg);
+      color: #145445;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .metric {
+      padding: 12px;
+      border: 1px solid var(--line);
+      background: #fbfaf6;
+      border-radius: 8px;
+    }
+
+    .metric-label {
+      display: block;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    .metric-value {
+      display: block;
+      margin-top: 2px;
+      font-size: 1.3rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .result-list {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .result-list li {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .result-list li:last-child {
+      border-bottom: 0;
+    }
+
+    .result-date {
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .result-amount {
+      font-weight: 800;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .empty-result {
+      color: var(--muted);
+      margin: 0;
+    }
+
+    .footer-note {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    @media (max-width: 860px) {
+      .topbar {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 580px) {
+      .app-shell {
+        width: min(100% - 20px, 1120px);
+        padding-top: 18px;
+      }
+
+      .receipt-row {
+        grid-template-columns: 36px minmax(0, 1fr) 38px;
+      }
+
+      .receipt-row label {
+        grid-column: 2 / 3;
+      }
+
+      .receipt-row label + label {
+        grid-column: 2 / 3;
+      }
+
+      .receipt-row .icon-button {
+        grid-column: 3 / 4;
+        grid-row: 1 / 3;
+      }
+
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .panel-header {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .panel-header .secondary {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <div>
+        <h1>ガソリンレシート調整</h1>
+        <div class="footer-note">古い日付を優先して、合計がぴったりになる組み合わせを探します。</div>
+      </div>
+      <div class="target-badge" aria-label="目標金額">目標 <span>30,000円</span></div>
+    </header>
+
+    <div class="layout">
+      <section class="panel" aria-labelledby="receipt-title">
+        <div class="panel-header">
+          <h2 id="receipt-title">レシート入力</h2>
+          <button class="secondary" type="button" id="add-row">行を追加</button>
+        </div>
+        <div class="panel-body">
+          <div class="receipt-list" id="receipt-list"></div>
+          <div class="actions">
+            <button class="primary" type="button" id="find-combination">30000円を探す</button>
+            <button class="danger" type="button" id="clear-all">入力を全削除</button>
+          </div>
+          <div class="status" id="status" role="status">日付と金額を入力してください。</div>
+        </div>
+      </section>
+
+      <aside class="panel" aria-labelledby="result-title">
+        <div class="panel-header">
+          <h2 id="result-title">検索結果</h2>
+        </div>
+        <div class="panel-body">
+          <div class="summary-grid">
+            <div class="metric">
+              <span class="metric-label">合計</span>
+              <span class="metric-value" id="result-total">0円</span>
+            </div>
+            <div class="metric">
+              <span class="metric-label">件数</span>
+              <span class="metric-value" id="result-count">0件</span>
+            </div>
+          </div>
+          <ul class="result-list" id="result-list"></ul>
+          <p class="empty-result" id="empty-result">まだ検索していません。</p>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <script>
+    const TARGET_AMOUNT = 30000;
+    const STORAGE_KEY = "oil-receipts-v1";
+
+    const receiptList = document.querySelector("#receipt-list");
+    const addRowButton = document.querySelector("#add-row");
+    const findButton = document.querySelector("#find-combination");
+    const clearButton = document.querySelector("#clear-all");
+    const statusBox = document.querySelector("#status");
+    const resultTotal = document.querySelector("#result-total");
+    const resultCount = document.querySelector("#result-count");
+    const resultList = document.querySelector("#result-list");
+    const emptyResult = document.querySelector("#empty-result");
+
+    let receipts = loadReceipts();
+
+    function createReceipt(date = "", amount = "") {
+      return {
+        id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
+        date,
+        amount
+      };
+    }
+
+    function loadReceipts() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+        if (Array.isArray(saved) && saved.length > 0) {
+          return saved.map((item) => createReceipt(item.date || "", item.amount || ""));
+        }
+      } catch (error) {
+        console.warn("保存データを読み込めませんでした。", error);
+      }
+      return [createReceipt()];
+    }
+
+    function saveReceipts() {
+      const payload = receipts.map(({ date, amount }) => ({ date, amount }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    }
+
+    function formatYen(value) {
+      return `${Number(value).toLocaleString("ja-JP")}円`;
+    }
+
+    function setStatus(message, type = "") {
+      statusBox.textContent = message;
+      statusBox.className = type ? `status ${type}` : "status";
+    }
+
+    function renderReceipts(invalidIds = new Set()) {
+      receiptList.innerHTML = "";
+
+      receipts.forEach((receipt, index) => {
+        const row = document.createElement("div");
+        row.className = `receipt-row${invalidIds.has(receipt.id) ? " invalid" : ""}`;
+        row.dataset.id = receipt.id;
+
+        const number = document.createElement("div");
+        number.className = "row-number";
+        number.textContent = String(index + 1);
+
+        const dateLabel = document.createElement("label");
+        dateLabel.textContent = "日付";
+        const dateInput = document.createElement("input");
+        dateInput.type = "date";
+        dateInput.value = receipt.date;
+        dateInput.addEventListener("input", (event) => {
+          receipt.date = event.target.value;
+          saveReceipts();
+        });
+        dateLabel.append(dateInput);
+
+        const amountLabel = document.createElement("label");
+        amountLabel.textContent = "金額";
+        const amountInput = document.createElement("input");
+        amountInput.type = "number";
+        amountInput.inputMode = "numeric";
+        amountInput.min = "1";
+        amountInput.step = "1";
+        amountInput.placeholder = "例: 5420";
+        amountInput.value = receipt.amount;
+        amountInput.addEventListener("input", (event) => {
+          receipt.amount = event.target.value;
+          saveReceipts();
+        });
+        amountLabel.append(amountInput);
+
+        const removeButton = document.createElement("button");
+        removeButton.type = "button";
+        removeButton.className = "icon-button";
+        removeButton.title = "この行を削除";
+        removeButton.setAttribute("aria-label", `${index + 1}行目を削除`);
+        removeButton.textContent = "×";
+        removeButton.addEventListener("click", () => {
+          receipts = receipts.filter((item) => item.id !== receipt.id);
+          if (receipts.length === 0) {
+            receipts.push(createReceipt());
+          }
+          saveReceipts();
+          renderReceipts();
+          setStatus("行を削除しました。");
+        });
+
+        row.append(number, dateLabel, amountLabel, removeButton);
+        receiptList.append(row);
+      });
+    }
+
+    function validateReceipts() {
+      const invalidIds = new Set();
+      const valid = [];
+
+      receipts.forEach((receipt, originalIndex) => {
+        const amount = Number(receipt.amount);
+        const isInteger = Number.isInteger(amount);
+        const hasValidDate = Boolean(receipt.date);
+        const hasValidAmount = isInteger && amount > 0;
+
+        if (!hasValidDate || !hasValidAmount) {
+          invalidIds.add(receipt.id);
+          return;
+        }
+
+        valid.push({
+          id: receipt.id,
+          date: receipt.date,
+          amount,
+          originalIndex
+        });
+      });
+
+      return { valid, invalidIds };
+    }
+
+    function isOlderPreferred(candidate, current) {
+      if (!current) {
+        return true;
+      }
+
+      for (let index = 0; index < candidate.bits.length; index += 1) {
+        if (candidate.bits[index] !== current.bits[index]) {
+          return candidate.bits[index] === "1";
+        }
+      }
+
+      if (candidate.items.length !== current.items.length) {
+        return candidate.items.length > current.items.length;
+      }
+
+      return candidate.sum < current.sum;
+    }
+
+    function shouldReplaceClosest(candidate, current) {
+      if (!current) {
+        return true;
+      }
+
+      const candidateDiff = Math.abs(TARGET_AMOUNT - candidate.sum);
+      const currentDiff = Math.abs(TARGET_AMOUNT - current.sum);
+
+      if (candidateDiff !== currentDiff) {
+        return candidateDiff < currentDiff;
+      }
+
+      const candidateUnder = candidate.sum <= TARGET_AMOUNT;
+      const currentUnder = current.sum <= TARGET_AMOUNT;
+      if (candidateUnder !== currentUnder) {
+        return candidateUnder;
+      }
+
+      return isOlderPreferred(candidate, current);
+    }
+
+    function solveCombination(validReceipts) {
+      const sorted = [...validReceipts].sort((a, b) => {
+        if (a.date !== b.date) {
+          return a.date.localeCompare(b.date);
+        }
+        return a.originalIndex - b.originalIndex;
+      });
+
+      const maxAmount = sorted.reduce((max, item) => Math.max(max, item.amount), 0);
+      const cap = TARGET_AMOUNT + maxAmount;
+      const emptyBits = "0".repeat(sorted.length);
+      const dp = new Map([[0, { sum: 0, items: [], bits: emptyBits }]]);
+
+      sorted.forEach((receipt, index) => {
+        const existing = Array.from(dp.values());
+
+        existing.forEach((combo) => {
+          const nextSum = combo.sum + receipt.amount;
+          if (nextSum > cap) {
+            return;
+          }
+
+          const nextBits = `${combo.bits.slice(0, index)}1${combo.bits.slice(index + 1)}`;
+          const nextCombo = {
+            sum: nextSum,
+            items: [...combo.items, receipt],
+            bits: nextBits
+          };
+          const current = dp.get(nextSum);
+
+          if (isOlderPreferred(nextCombo, current)) {
+            dp.set(nextSum, nextCombo);
+          }
+        });
+      });
+
+      const exact = dp.get(TARGET_AMOUNT) || null;
+      let closest = null;
+
+      dp.forEach((combo) => {
+        if (combo.items.length > 0 && shouldReplaceClosest(combo, closest)) {
+          closest = combo;
+        }
+      });
+
+      return { exact, closest };
+    }
+
+    function renderResult(combo) {
+      resultList.innerHTML = "";
+      emptyResult.hidden = Boolean(combo);
+      resultTotal.textContent = formatYen(combo ? combo.sum : 0);
+      resultCount.textContent = `${combo ? combo.items.length : 0}件`;
+
+      if (!combo) {
+        emptyResult.textContent = "条件に合う候補はありません。";
+        return;
+      }
+
+      combo.items.forEach((item) => {
+        const row = document.createElement("li");
+        const date = document.createElement("span");
+        const amount = document.createElement("span");
+        date.className = "result-date";
+        amount.className = "result-amount";
+        date.textContent = item.date;
+        amount.textContent = formatYen(item.amount);
+        row.append(date, amount);
+        resultList.append(row);
+      });
+    }
+
+    function handleFind() {
+      const { valid, invalidIds } = validateReceipts();
+      renderReceipts(invalidIds);
+
+      if (invalidIds.size > 0) {
+        renderResult(null);
+        setStatus("日付未入力、または金額が正しい正の整数ではない行があります。", "error");
+        return;
+      }
+
+      if (valid.length === 0) {
+        renderResult(null);
+        setStatus("レシートを1件以上入力してください。", "error");
+        return;
+      }
+
+      const { exact, closest } = solveCombination(valid);
+
+      if (exact) {
+        renderResult(exact);
+        setStatus("30000円ぴったりの組み合わせが見つかりました。", "success");
+        return;
+      }
+
+      renderResult(closest);
+      setStatus("ぴったりは見つかりませんでした。30000円に最も近い候補を表示しています。", "error");
+    }
+
+    addRowButton.addEventListener("click", () => {
+      receipts.push(createReceipt());
+      saveReceipts();
+      renderReceipts();
+      setStatus("行を追加しました。");
+    });
+
+    findButton.addEventListener("click", handleFind);
+
+    clearButton.addEventListener("click", () => {
+      receipts = [createReceipt()];
+      saveReceipts();
+      renderReceipts();
+      renderResult(null);
+      emptyResult.textContent = "まだ検索していません。";
+      setStatus("入力を全削除しました。");
+    });
+
+    renderReceipts();
+  </script>
+</body>
+</html>
